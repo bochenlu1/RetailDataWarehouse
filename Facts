@@ -1,0 +1,142 @@
+--create fact productsalestarget
+select * from ;
+CREATE OR REPLACE TABLE Fact_ProductSalesTarget (
+  DimProductID number(38,0) constraint FK_DimProductID foreign key references dim_product(dimproductid),
+  DimTargetDateID number(9,0) constraint FK_TargetDateID foreign key references dim_date(date_pkey),
+  ProductTargetSalesQuantity integer
+);
+  
+--load data
+
+INSERT INTO fact_productsalestarget (
+  DimProductID,
+  DimTargetDateID,
+  ProductTargetSalesQuantity)
+
+SELECT
+dim_product.dimproductID,
+dim_date.date_pkey AS dimtargetdateID,
+(stage_target_product.salesquantitytarget)/365 AS producttargetsalesquantity
+FROM stage_target_product
+INNER JOIN dim_date
+ON dim_date.year = stage_target_product.year
+INNER JOIN dim_product
+ON
+dim_product.productID = stage_target_product.productID;
+
+--create fact SRCSalesTarget
+CREATE OR REPLACE TABLE Fact_SRCSalesTarget (
+  DimStoreID number(38,0) constraint FK_DimStoreID foreign key references dim_store(dimstoreid),
+  DimResellerID number(38,0) constraint FK_DimResellerID foreign key references dim_reseller(dimresellerid),
+  DimChannelID number(38,0) constraint FK_DimChannelID foreign key references dim_channel(dimchannelid),
+  DimTargetDateID number(9,0) constraint FK_TargetDateID foreign key references dim_date(date_pkey),
+  SalesTargetAmount float
+);
+  
+--load data
+
+INSERT INTO fact_SRCSalesTarget (
+  DimStoreID,
+  DimResellerID,
+  DimChannelID, 
+  DimTargetDateID,
+  SalesTargetAmount)
+
+SELECT
+NVL(dim_store.dimstoreID, -1) AS dimstoreid,
+NVL(dim_reseller.dimresellerID, -1) AS dimresellerid,
+NVL(dim_channel.dimchannelID, -1) AS dimchannelID,
+dim_date.date_pkey AS dimtargetdateID,
+(stage_target_channel_reseller.targetsalesamount)/365 AS salestargetamount
+FROM stage_target_channel_reseller
+LEFT OUTER JOIN dim_store ON dim_store.storename = stage_target_channel_reseller.targetname
+LEFT OUTER JOIN dim_reseller ON dim_reseller.resellername = CASE WHEN
+stage_target_channel_reseller.targetname = 'Mississippi Distributors' then 'Mississipi Distributors' ELSE
+stage_target_channel_reseller.targetname
+END
+LEFT OUTER JOIN dim_date ON dim_date.year = stage_target_channel_reseller.year
+LEFT OUTER JOIN dim_channel ON dim_channel.channelname = CASE WHEN
+stage_target_channel_reseller.channelname = 'Online' then 'On-line' ELSE
+stage_target_channel_reseller.channelname END;
+
+select sum (salestargetamount) from Fact_SRCSalesTarget;
+select (dimresellerid) from Fact_SRCSalesTarget
+where dimchannelid = -1;
+select * from stage_target_channel_reseller;
+
+
+select SUM(salestargetamount) from Fact_SRCSalesTarget
+where dimresellerID = 1;
+select * from dim_channel
+where dimchannelID = -1;
+
+--create fact SalesActual
+CREATE OR REPLACE TABLE Fact_SalesActual (
+  DimProductID number(38,0) constraint FK_DimProductID foreign key references dim_product(dimproductid),
+  DimStoreID number(38,0) constraint FK_DimStoreID foreign key references dim_store(dimstoreid),
+  DimResellerID number(38,0) constraint FK_DimResellerID foreign key references dim_reseller(dimresellerid),
+  DimCustomerID number(38,0) constraint FK_DimCustomerID foreign key references dim_customer(dimcustomerid),
+  DimChannelID number(38,0) constraint FK_DimChannelID foreign key references dim_channel(dimchannelid),
+  DimSalesDateID number(9,0) constraint FK_SalesDateID foreign key references dim_date(date_pkey),
+  DimLocationID number(38,0) constraint FK_LocationID foreign key references dim_location(dimlocationid),
+  SalesHeaderID number(38,0),
+  SalesDetailID number(38,0),
+  SaleAmount FLOAT,
+  SaleQuantity number(38,0),
+  SaleUnitPrice FLOAT,
+  SaleExtendedCost FLOAT,
+  SaleTotalProfit FLOAT
+);
+  
+select * from stage_product;
+select * from stage_reseller;
+select * from stage_salesdetail;
+select * from stage_salesdetail;
+--load data
+
+INSERT INTO fact_SalesActual (
+  DimProductID,
+  DimStoreID,
+  DimResellerID,
+  DimCustomerID,
+  DimChannelID,
+  DimSalesDateID,
+  DimLocationID,
+  SalesHeaderID,
+  SalesDetailID,
+  SaleAmount,
+  SaleQuantity,
+  SaleUnitPrice,
+  SaleExtendedCost,
+  SaleTotalProfit)
+
+SELECT
+dim_product.dimproductID,
+NVL(dim_store.dimstoreID, -1) AS dimstoreid,
+NVL(dim_reseller.dimresellerID, -1) AS dimresellerid,
+NVL(dim_customer.dimcustomerID, -1) AS dimcustomerID,
+dim_channel.dimchannelID AS dimchannelID,
+dim_date.date_pkey AS dimSalesdateID,
+NVL(dim_location.dimlocationID, -1) AS dimlocationID,
+stage_salesheader.salesheaderID AS SalesheaderID,
+stage_salesdetail.salesdetailID AS salesdetailID,
+stage_salesdetail.salesamount AS saleamount,
+stage_salesdetail.salesquantity AS salequantity,
+(stage_salesdetail.salesamount)/(stage_salesdetail.salesquantity) AS saleunitprice,
+(stage_salesdetail.salesquantity)*(dim_product.productcost) AS saleextendedcost,
+CASE when ROUND((stage_salesdetail.salesamount)/(stage_salesdetail.salesquantity),2) = dim_product.productretailprice
+then (dim_product.productretailprofit)*(stage_salesdetail.salesquantity)
+else (dim_product.productwholesaleunitprofit)*(stage_salesdetail.salesquantity)
+end AS SaleTotalprofit
+FROM stage_salesdetail
+INNER JOIN dim_product ON dim_product.productID = stage_salesdetail.productID
+INNER JOIN stage_salesheader ON stage_salesheader.salesheaderID = stage_salesdetail.salesheaderID
+LEFT JOIN dim_store ON dim_store.storeID = stage_salesheader.storeID
+LEFT JOIN dim_reseller ON dim_reseller.resellerID = stage_salesheader.resellerID
+LEFT JOIN dim_customer ON dim_customer.customerID = stage_salesheader.customerID
+LEFT JOIN dim_channel ON dim_channel.channelID = stage_salesheader.channelID
+LEFT OUTER JOIN dim_location ON CASE
+when stage_salesheader.storeID IS NOT NULL THEN dim_store.dimlocationID = dim_location.dimlocationID
+when stage_salesheader.RESELLERID IS NOT NULL THEN dim_reseller.dimlocationID = dim_location.dimlocationID
+when stage_salesheader.customerID IS NOT NULL THEN dim_customer.dimlocationID = dim_location.dimlocationID END
+INNER JOIN dim_date ON dim_date.date = stage_salesheader.date;
