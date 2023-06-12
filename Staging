@@ -1,0 +1,142 @@
+create or replace WAREHOUSE "IMT577_DW_BOCHEN_LU_STAGE" WITH WAREHOUSE_SIZE = "XSMALL" AUTO_SUSPEND = 300 AUTO_RESUME = TRUE;
+CREATE OR REPLACE DATABASE "IMT577_DW_BOCHEN_LU_STAGE";
+CREATE OR REPLACE FILE FORMAT CSV_SKIP_HEADER
+type = 'CSV'
+field_delimiter = ','
+FIELD_OPTIONALLY_ENCLOSED_BY = '"'
+skip_header = 1;
+
+select * from CSV_SKIP_HEADER;
+
+CREATE OR REPLACE TABLE STAGE_SalesHeader(
+  SalesHeaderID VARCHAR(255),
+Date DATE,
+ChannelID NUMBER(38,0),
+StoreID NUMBER(38,0),
+CustomerID VARCHAR(255),
+ResellerID VARCHAR(255),
+CreatedDate DATE,
+CreatedBy VARCHAR(255),
+ModifiedDate DATE,
+ModifiedBy VARCHAR(255));
+CREATE OR REPLACE TABLE STAGE_Product (
+  ProductID NUMBER(38,0),
+  ProductTypeID NUMBER(38,0),
+  Product VARCHAR(255),
+  Color VARCHAR(255),Style VARCHAR(255),
+  UnitofMeasureID NUMBER(38,0),Weight NUMBER(38,0),
+  Price FLOAT,
+  Cost FLOAT,
+  CreatedDate DATE,
+  CreatedBy VARCHAR(255),
+  ModifiedDate DATE,
+  ModifiedBy VARCHAR(255),
+  WholesalePrice VARCHAR(255));
+CREATE OR REPLACE TABLE STAGE_Customer(
+ CustomerID VARCHAR(255),
+  SubSegmentID NUMBER(38,0),
+  FirstName VARCHAR(255),
+  LastName VARCHAR(255),
+  Gender VARCHAR(255),
+  EmailAddress VARCHAR(255),
+  Address VARCHAR(255),
+  City VARCHAR(255),
+  StateProvince VARCHAR(255),
+  Country VARCHAR(255),
+  PostalCode NUMBER(38,0),
+  PhoneNumber VARCHAR(255),
+  CreatedDate DATE,
+  CreatedBy VARCHAR(255),
+  ModifiedDate DATE,
+  ModifiedBy VARCHAR(255));
+CREATE OR REPLACE TABLE STAGE_ChannelCategory(
+ChannelCategoryID NUMBER(38,0),
+ChannelCategory VARCHAR(255),
+CreatedDate DATE,
+CreatedBy VARCHAR(255),
+ModifiedDate DATE,
+ModifiedBy VARCHAR(255)
+);
+CREATE OR REPLACE TABLE STAGE_Channel (
+ChannelID NUMBER(38,0),
+ChannelCategoryID NUMBER(38,0),
+Channel VARCHAR(255),
+CreatedDate DATE,
+CreatedBy VARCHAR(255),
+ModifiedDate DATE,
+ModifiedBy VARCHAR(255)
+);
+CREATE OR REPLACE TABLE STAGE_Target_Product (
+ProductID NUMBER(38,0),
+Product VARCHAR(255),
+Year NUMBER(5,0),
+SalesQuantityTarget NUMBER(38,0)
+);
+CREATE OR REPLACE TABLE STAGE_Target_Channel_Reseller (
+Year NUMBER(5,0),
+ChannelName VARCHAR(255),
+TargetName VARCHAR(255),
+ TargetSalesAmount FLOAT
+);
+CREATE OR REPLACE TABLE STAGE_Segment (
+SegmentID NUMBER(38,0),
+Segment VARCHAR(255),
+CreatedDate DATE,
+CreatedBy VARCHAR(255),
+ModifiedDate DATE,
+ModifiedBy VARCHAR(255));
+CREATE OR REPLACE TABLE STAGE_Store (
+StoreID NUMBER(38,0),
+SubSegmentID NUMBER(38,0),
+StoreNumber NUMBER(38,0),
+StoreManager VARCHAR(255),
+Address VARCHAR(255),
+City VARCHAR(255),
+StateProvince VARCHAR(255),
+Country VARCHAR(255),
+PostalCode NUMBER(38,0),
+PhoneNumber VARCHAR(255),
+CreatedDate DATE,
+CreatedBy VARCHAR(255),
+ModifiedDate DATE,
+ModifiedBy VARCHAR(255));
+CREATE OR REPLACE TABLE STAGE_SalesDetail (
+SalesDetailID NUMBER(38,0),
+SalesHeaderID NUMBER(38,0),
+ProductID NUMBER(38,0),
+SalesQuantity NUMBER(38,0),
+SalesAmount FLOAT,
+CreatedDate DATE,
+CreatedBy VARCHAR(255),
+ModifiedDate DATE,
+ModifiedBy VARCHAR(255));
+CREATE OR REPLACE TABLE STAGE_ProductType (
+ProductTypeID NUMBER(38,0),
+ProductCategoryID NUMBER(38,0),
+ProductType VARCHAR(255),
+CreatedDate DATE,
+CreatedBy VARCHAR(255),
+ModifiedDate DATE,
+ModifiedBy VARCHAR(255));
+CREATE OR REPLACE TABLE STAGE_Reseller (
+ResellerID VARCHAR(255),
+Contact VARCHAR(255),
+EmailAddress VARCHAR(255),
+Address VARCHAR(255),
+City VARCHAR(255),
+StateProvince VARCHAR(255),
+Country VARCHAR(255),
+PostalCode NUMBER(38,0),
+PhoneNumber VARCHAR(255),
+CreatedDate DATE,
+CreatedBy VARCHAR(255),
+ModifiedDate DATE,
+ModifiedBy VARCHAR(255),
+ResellerName VARCHAR(255));
+CREATE OR REPLACE TABLE STAGE_ProductCategory (
+ProductCategoryID NUMBER(38,0),
+ProductCategory VARCHAR(255),
+CreatedDate DATE,
+CreatedBy VARCHAR(255),
+ModifiedDate DATE,
+ModifiedBy VARCHAR(255));
