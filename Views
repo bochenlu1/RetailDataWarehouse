@@ -1,0 +1,110 @@
+CREATE OR REPLACE secure VIEW DailyProductSales_View2 AS;
+SELECT
+sum(fact_salesactual_view.saleamount) AS SaleAmount,
+sum(fact_salesactual_view.salequantity) AS SaleQuantity,
+sum(fact_salesactual_view.saletotalprofit) AS Profit,
+dim_channel_view.channelname,
+dim_store_view.storename,
+dim_reseller_view.resellername,
+dim_date.date,
+dim_product_view.productname,
+dim_product_view.productcategory,
+dim_product_view.dimproductid
+FROM fact_salesactual_view
+inner join dim_date on fact_salesactual_view.dimSALESdateid = dim_date.date_pkey
+inner join dim_store_view on fact_salesactual_view.dimstoreid = dim_store_view.dimstoreid
+inner join dim_product_view on fact_salesactual_view.dimproductid = dim_product_view.dimproductid
+inner join dim_reseller_view on fact_salesactual_view.dimresellerid = dim_reseller_view.dimresellerid
+inner join dim_channel_view on fact_salesactual_view.dimchannelid = dim_channel_view.dimchannelid
+//WHERE dim_store_view.storenumber IN (10,21)
+group by dim_date.date, dim_product_view.dimproductid, dim_reseller_view.resellername,
+dim_store_view.storename, dim_product_view.productname, dim_channel_view.channelname, dim_product_view.productcategory;
+
+CREATE OR REPLACE secure VIEW TargetVSActualSales_View2 AS
+SELECT
+sum(fact_salesactual_view.saleamount) AS saleamount,
+SRCSalesTarget_view.salestargetamount AS salestargetamount,
+sum(fact_salesactual_view.saletotalprofit) AS Profit,
+dim_store_view.storename AS STORENAME,
+dim_reseller_view.resellername as resellername,
+dim_channel_view.channelname as channelname,
+Dim_date.year AS year
+FROM fact_salesactual_view
+INNER join dim_date on fact_salesactual_view.dimSALESdateid = dim_date.date_pkey
+INNER join dim_store_view on fact_salesactual_view.dimstoreid = dim_store_view.dimstoreid
+INNER join dim_reseller_view on fact_salesactual_view.dimresellerid = dim_reseller_view.dimresellerid
+INNER join dim_channel_view on fact_salesactual_view.dimchannelid = dim_channel_view.dimchannelid
+INNER JOIN
+(SELECT
+sum(fact_SRCSalesTarget.salestargetamount) AS salestargetamount,
+dim_date.DATE AS DATE,
+Dim_Store_view.storename AS STORENAME,
+dim_store_view.dimstoreid AS dimstoreid,
+dim_reseller_view.resellername as resellername,
+dim_reseller_view.dimresellerid as dimresellerid,
+dim_channel_view.channelname as channelname,
+dim_channel_view.dimchannelid as dimchannelid 
+FROM fact_SRCSalestarget
+INNER join dim_date on fact_SRCSalesTarget.dimtargetdateid = dim_date.date_pkey
+INNER join dim_store_view on fact_SRCSalesTarget.dimstoreid = Dim_store_view.dimstoreid
+INNER  join dim_reseller_view on fact_SRCSalesTarget.dimresellerid = dim_reseller_view.dimresellerid
+INNER join dim_channel_view on fact_SRCSalesTarget.dimchannelid = dim_channel_view.dimchannelid
+group by dim_date.date, Dim_Store_view.storename, dim_store_view.dimstoreid, dim_reseller_view.resellername,dim_channel_view.channelname, dim_reseller_view.dimresellerid, dim_channel_view.dimchannelid)
+SRCSalesTarget_view 
+ON
+Dim_date.DATE = SRCSalesTarget_view.DATE
+AND
+Dim_Store_View.dimstoreid = SRCSalesTarget_view.dimstoreid
+AND
+Dim_reseller_View.dimresellerid = SRCSalesTarget_view.dimresellerid
+AND
+Dim_channel_View.dimchannelid = SRCSalesTarget_view.dimchannelid
+--WHERE dim_store_view.storenumber IN (10,21)
+GROUP BY Dim_store_View.storename, dim_reseller_view.resellername, dim_channel_view.channelname, Dim_Date.DATE, SRCSalesTarget_view.Salestargetamount;
+
+SELECT * FROM TargetVSActualSales_View2
+WHERE * IS NULL;
+select sum(salestargetamount) from DailyProductSales_View2;
+select sum(salequantity) from TargetVSActualSales_View;
+
+select sum(PROFIT) from TargetVSActualSales_View;
+select sum(saleamount) from TargetVSActualSales_View2;
+
+SELECT sum(salestargetamount) from TargetVSActualSales_View2;
+SELECT sum(salestargetamount) from TargetVSActualSales_View;
+select* from fact_SRCSalesTarget_view;
+
+Create or replace secure view  SalesTarget_View AS
+SELECT
+sum(fact_SRCSalesTarget.salestargetamount) AS salestargetamount,
+dim_date.DATE AS DATE,
+Dim_Store_view.storename AS STORENAME,
+dim_store_view.dimstoreid AS dimstoreid,
+dim_reseller_view.resellername as resellername,
+dim_reseller_view.dimresellerid as dimresellerid,
+dim_channel_view.channelname as channelname,
+dim_channel_view.dimchannelid as dimchannelid 
+FROM fact_SRCSalestarget
+left outer join dim_date on fact_SRCSalesTarget.dimtargetdateid = dim_date.date_pkey
+LEFT OUTER join dim_store_view on fact_SRCSalesTarget.dimstoreid = Dim_store_view.dimstoreid
+LEFT OUTER join dim_reseller_view on fact_SRCSalesTarget.dimresellerid = dim_reseller_view.dimresellerid
+LEFT OUTER join dim_channel_view on fact_SRCSalesTarget.dimchannelid = dim_channel_view.dimchannelid
+group by dim_date.date, Dim_Store_view.storename, dim_store_view.dimstoreid, dim_reseller_view.resellername,dim_channel_view.channelname, dim_reseller_view.dimresellerid, dim_channel_view.dimchannelid;
+
+select * from salestarget_view;
+SELECT sum(salestargetamount) from salestarget_view;
+
+Create or replace secure view SalesActual_View AS 
+SELECT
+sum(fact_salesactual_view.saleamount) AS saleamount,
+sum(fact_salesactual_view.saletotalprofit) AS Profit,
+dim_store_view.storename AS STORENAME,
+dim_reseller_view.resellername as resellername,
+dim_channel_view.channelname as channelname,
+Dim_date.DATE AS DATE
+FROM fact_salesactual_view
+LEFT OUTER join dim_date on fact_salesactual_view.dimSALESdateid = dim_date.date_pkey
+LEFT OUTER join dim_store_view on fact_salesactual_view.dimstoreid = dim_store_view.dimstoreid
+LEFT OUTER join dim_reseller_view on fact_salesactual_view.dimresellerid = dim_reseller_view.dimresellerid
+LEFT OUTER join dim_channel_view on fact_salesactual_view.dimchannelid = dim_channel_view.dimchannelid
+GROUP BY Dim_store_View.storename, dim_reseller_view.resellername, dim_channel_view.channelname, Dim_Date.DATE;
